@@ -1,5 +1,7 @@
 import numpy as np
 from functools import total_ordering
+
+from sympy import Line
 import Checker
 from typing import Tuple
 import math
@@ -11,52 +13,52 @@ class Point2D:
         return points
 
     def __init__(self, x: float, y: float, primary: str = "x", angle: int = 0, og: Tuple[int, int] = (0, 0)):
-        self._x = x
-        self._y = y
+        self.__x = x
+        self.__y = y
         Checker.check_primary_point(primary)
         Checker.check_angle(angle)
-        self._primary = primary
-        self._angle = angle
-        self._og = og
+        self.__primary = primary
+        self.__angle = angle
+        self.__og = og
         
     @property
     def x(self):
-        return self._x
+        return self.__x
 
     @property
     def y(self):
-        return self._y
+        return self.__y
     
     @property
     def xy(self):
-        return self._x, self._y
+        return self.__x, self.__y
     
     @property 
     def primary(self):
-        return self._primary
+        return self.__primary
     
     @property 
     def angle(self):
-        return self._angle
+        return self.__angle
 
     def set_primary(self, primary: str):
         Checker.check_primary_point(primary)
-        self._primary = primary
+        self.__primary = primary
 
     def rotate(self, angle: int, in_place: bool = True, return_new: bool = False):
         Checker.check_angle(angle)
         Checker.check_angle_for_rotate(angle)
         if in_place:
-            self._angle = angle
+            self.__angle = angle
             angle = math.radians(angle)
-            self._x = self.x / math.sin(angle)
-            self._y = self.y / math.cos(angle)
+            self.__x = self.x / math.sin(angle)
+            self.__y = self.y / math.cos(angle)
         if return_new:
             angle = math.radians(angle)
             return Point2D(self.x / math.sin(angle), self.y / math.cos(angle))
 
     def set_og(self, x: float, y: float):
-        self._og = (x, y)
+        self.__og = (x, y)
 
     def distance_to(self, other) -> float:
         return math.sqrt(
@@ -69,21 +71,27 @@ class Point2D:
     
     def shift_x(self, val: int, in_place: bool = True, return_new: bool = False):
         if in_place:
-            self._x += val
+            self.__x += val
         if return_new:
             return Point2D(self.x + val, self.y)
     
     def shift_y(self, val: int, in_place: bool = True, return_new: bool = False):
         if in_place:
-            self._y += val
+            self.__y += val
         if return_new:
             return Point2D(self.x + val, self.y)
     
     def __eq__(self, other) -> bool:
-        if self.primary != "angle":
+        if self.primary != "angle" and not self.primary == "slope":
             return self.x == other.x and self.y == other.y
+        elif self.primary == "slope":
+            line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
+            line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
+            m1, _ = line1.to_slope_intercept()
+            m2,_  = line2.to_slope_intercept()
+            return m1 == m2
         else:
-            return Fundamental2D.direction(Point2D(*self._og), self, other) == 0
+            return Fundamental2D.direction(Point2D(*self.__og), self, other) == 0
 
     def __lt__(self, other) -> bool:
         if self.primary == "x":
@@ -95,25 +103,25 @@ class Point2D:
             if self.y != other.y:
                 return self.y < other.y
             else:
-                return self.y < other.y
+                return self.x < other.x
         elif self.primary == "x_flip":
             if self.x != other.x:
-                return self.x > other.x
+                return self.x < other.x
             else:
-                return self.y < other.y
+                return self.y > other.y
         elif self.primary == "y_flip":
             if self.y != other.y:
-                return self.y > other.y
-            else:
                 return self.y < other.y
-        elif self.primary == "circumnavigation":
-            line1: Line2D = Line2D.from_fix_points(Point2D(*self._og), self)
-            line2: Line2D = Line2D.from_fix_points(Point2D(*self._og), other)
-            m1 = line1.to_slope_intercept()
-            m2 = line1.to_slope_intercept()
+            else:
+                return self.x > other.x
+        elif self.primary == "slope":
+            line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
+            line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
+            m1, _ = line1.to_slope_intercept()
+            m2,_  = line2.to_slope_intercept()
             return m1 < m2
         elif self.primary == "angle":
-            return Fundamental2D.direction(Point2D(*self._og), self, other) == -1
+            return Fundamental2D.direction(Point2D(*self.__og), self, other) == -1
 
     def __repr__(self) -> str:
         return f"({self.x}, {self.y})"
@@ -133,25 +141,47 @@ class Fundamental2D:
 
 class Line2D:
     def __init__(self, a: int, b: int, c: int):
-        self._coef_a = a
-        self._coef_b = b
-        self._coef_c = c
+        self.__coef_a = a
+        self.__coef_b = b
+        self.__coef_c = c
     @property
     def coef_a(self):
-        return self._coef_a
+        return self.__coef_a
 
     @property
     def coef_b(self):
-        return self._coef_b
+        return self.__coef_b
     
     @property
     def coef_c(self):
-        return self._coef_c
+        return self.__coef_c
     
     @property
     def coefs(self):
         return self.coef_a, self.coef_b, self.coef_c
-    
+
+    def intersect(self, other):
+        a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
+        a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
+        delta = a1 * b2 - a2 * b1
+
+        if delta == 0:
+            if a1 * c2 == a2 * c1 and b1 * c2 == b2 * c1:
+                # coincident
+                return 0
+            else:
+                # parallel
+                return 1
+        
+        delta_x = -c1 * b2 + c2 * b1
+        delta_y = -a1 * c2 + a2 * c1
+
+        x = delta_x / delta
+        y = delta_y / delta
+
+        return x, y
+            
+
     def from_slop_intercept(m: int, intercept: int, is_raw: bool = False):
         a = m
         b = -1
@@ -204,22 +234,22 @@ class Line2D:
         return iter([self.coef_a, self.coef_b, self.coef_c])
 
 class Segment2D(Line2D):
-    def __init__(self, p1: Point2D, p2: Point2D):
+    def __init__(self, p1: Point2D, p2: Point2D, sort: bool = True):
         Checker.check_overlap_point(p1, p2)
-        if p1 > p2:
+        if p1 > p2 and sort:
             p1, p2 = p2, p1
-        self._p1 = p1 # small
-        self._p2 = p2 # large
+        self.__p1 = p1 # small
+        self.__p2 = p2 # large
         a, b, c = Line2D.from_fix_points(p1, p2, True)
         super().__init__(a, b, c)
 
     @property
     def p1(self):
-        return self._p1
+        return self.__p1
 
     @property
     def p2(self):
-        return self._p2
+        return self.__p2
     
     @property
     def xy(self):
@@ -229,6 +259,9 @@ class Segment2D(Line2D):
         return self.p1.distance_to(self.p2)
 
     def connection(self) -> list[Point2D]:
+        last = (self.p1, self.p2)
+        if self.p1 > self.p2:
+            self.__p1, self.__p2 = self.p2, self.p1
         Line2D = []
         movex = [0, 1]
         movey = [0, 1] if self.p1.y < self.p2.y else [-1, 0]
@@ -248,6 +281,7 @@ class Segment2D(Line2D):
                         minn2 = dis2
                         p = Point2D(x+dx, y+dy)
             Line2D.append(p)
+        self.__p1, self.__p2 = last
         return Line2D
     
     def __repr__(self) -> str:
@@ -255,141 +289,3 @@ class Segment2D(Line2D):
     
     def __iter__(self):
         return iter([self.p1, self.p2])
-
-class CoordinateSys2D:
-    def __init__(self, points: list | list[Point2D] | np.ndarray, primary: str = "x", angle: int = 0, og: Tuple[int, int] = (0, 0), from_raw_points: bool = True):
-        Checker.check_primary_point(primary)
-        self._primary = primary
-        Checker.check_angle(angle)
-        self._angle = angle
-        if from_raw_points:
-            self._points = np.array(Point2D.to_points(points, primary, angle,))
-        else:
-            self._points = points
-        unique = []
-        for p in self._points:
-            if not p in unique:
-                unique.append(p)
-        self._points = np.array(unique)
-        self._og = og
-
-    @property
-    def points(self):
-        return self._points
-    
-    @property
-    def primary(self):
-        return self._primary
-    
-    @property
-    def angle(self):
-        return self._angle
-
-    @property
-    def og(self):
-        return self._og
-        
-    def rotate(self, angle: int):
-        for idx in range(len(self.points)):
-            self.points[idx].rotate(angle)
-        self._angle = angle
-    
-    def set_og(self, x: float, y: float):
-        self._og = (x, y)
-        for idx in range(len(self.points)):
-            self.points[idx].set_og(x, y)
-
-    def set_primary(self, primary: str):
-        if primary == "angle":
-            self.set_og(*np.min(self.points, axis=0))
-        for idx in range(len(self.points)):
-            self.points[idx].set_primary(primary)
-        self._primary = primary
-
-    def sort_points(self, descending: bool = False, in_place: bool = True):
-        res = np.sort(self.points, kind = "heapsort")
-        if descending:
-            res = np.flip(res)
-        if in_place:
-            self._points = res
-        else:
-            return res
-    
-    def is_points_sorted(self) -> bool:
-        return np.all(self.points[:-1] <= self.points[1:])
-
-    def draw_graph(self) -> list:
-        self.sort_points()
-        graph = []
-        for idx in range(len(self.points)-1):
-            p1, p2 = Point2D(*self.points[idx]), Point2D(*self.points[idx+1])
-            graph += Segment2D(p1, p2).connection()[:-1:] 
-        return graph
-
-    def draw_polygon(self, dividing_line: int | Line2D = -1, as_segment: bool = True) -> list[Segment2D] | list[Point2D]:
-        self.sort_points()
-        if dividing_line == -1:
-            last_primary = self._primary
-            self.set_primary("y")
-            points = self.sort_points(in_place = False)
-            self.set_primary(last_primary)
-            dividing_line = Line2D(
-                a = 0,
-                b = 1,
-                c = -points[len(points)//2].y
-            )
-        elif isinstance(dividing_line, int):
-            dividing_line = Line2D(
-                a = 0,
-                b = 1,
-                c = -dividing_line
-            )
-        raw_p = dividing_line.x_y_range(0, 2)
-        dp1 = Point2D(*raw_p[0])
-        dp2 = Point2D(*raw_p[1])
-        
-        border: list[Segment2D]  = []
-        points = []
-        # upper hull
-        points = [p for p in self.points if Fundamental2D.direction(dp1, dp2, p) <= 0]
-        sorted(points)
-        for idx in range(len(points)-1):
-            p1, p2 = Point2D(*points[idx]), Point2D(*points[idx+1])
-            border.append(Segment2D(p1, p2))
-            
-        points= []
-        # lower hull
-        points = [p for p in self.points if Fundamental2D.direction(dp1, dp2, p) > 0]
-        sorted(points)
-        points.reverse()
-        
-        border.append(Segment2D(
-            Point2D(*border[-1].p2),
-            Point2D(*points[0])
-        ))
-        
-        for idx in range(len(points)-1):
-            p1, p2 = Point2D(*points[idx]), Point2D(*points[idx+1])
-            border.append(Segment2D(p1, p2))
-
-        border.append(Segment2D(
-            Point2D(*border[0].p1),
-            Point2D(*border[-1].p1)
-        ))
-
-        if as_segment:
-            return border
-        
-        graph = []
-        for p in border:
-            graph += p.connection()[:-1:]
-        return graph
-
-    def __repr__(self) -> str:
-        return f"{self.points}"
-    
-    def __iter__(self):
-        return iter(self.points)
-    
-    def __len__(self):
-        return len(self.points)

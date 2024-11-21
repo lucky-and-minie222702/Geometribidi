@@ -1,17 +1,18 @@
 import numpy as np
 from sympy import true
 from Geometry2D.Basis2D import *
+from Geometry2D.CoordinateSys2D import *
 import Checker
 
 class Polygon2D(CoordinateSys2D):
     def __init__(self, segments: list | list[Segment2D] | np.ndarray):
         points = []
-        self._segments = []
+        self.__segments = []
         for p1, p2 in segments:
             points.append(p1)
             points.append(p2)
             if isinstance(p1, Point2D):
-                self._segments.append(Segment2D(p1, p2))
+                self.__segments.append(Segment2D(p1, p2))
             else:
                 self.segments.append(Segment2D(Point2D(*p1), Point2D(*p2)))
         super().__init__(points)
@@ -19,20 +20,20 @@ class Polygon2D(CoordinateSys2D):
         
     @property
     def segments(self):
-        return self._segments
+        return self.__segments
 
 class ConvexHull2D(CoordinateSys2D):
     def __init__(self, points, primary: str = "x"):
         super().__init__(points, primary)
         super().sort_points()
-        self._points = self._convert()
-        self._all_points = points
+        self.__points = self.__convert()
+        self.__all_points = points
         del self.sort_points
         del self.is_points_sorted
 
     @property 
     def all_points(self):
-        return self._all_points
+        return self.__all_points
 
     def _convert(self) -> list:
         # Monotone chain algorithm

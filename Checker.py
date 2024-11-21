@@ -7,7 +7,7 @@ def format_unknown_property(receive, expect, name) -> str:
     return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receive '{receive}'"
 
 def check_primary_point(primary: str):
-    props = ["x", "y", "x_flip", "y_flip", "angle", "circumnavigation"]
+    props = ["x", "y", "x_flip", "y_flip", "angle", "circumnavigation", "slope"]
     if not primary in props:
         raise ValueError(format_unknown_property(primary, props, "primary"))
 
@@ -36,11 +36,6 @@ def check_str_length(s: str, expected_len: int, method: str = "=="):
 def check_overlap_point(a, b):
     if a == b:
         raise ValueError(f"Point {a} and {b} overlap")
-
-def check_line_connect_mode(mode: str):
-    props = ["smooth", "upper_right_angle", "lower_right_angle", "center_right_angle"]
-    if not mode in props:
-        raise ValueError(format_unknown_property(mode, props, "line connect mode"))
     
 def check_coefficients_standard(a: int, b: int, c: int):
     if b == 0:

@@ -7,6 +7,7 @@ class Circle(Polygon2D):
     def __init__(self, center: Point2D, radius: int, primary):
         self.center = center
         self.radius = radius
+
         
         points = []
         p = Point2D()
