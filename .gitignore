@@ -6,3 +6,4 @@ main.py
 *.ipynb
 test.txt
 *test
+.DS_Store
