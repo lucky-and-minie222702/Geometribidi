@@ -7,7 +7,7 @@ def format_unknown_property(receive, expect, name) -> str:
     return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receive '{receive}'"
 
 def check_primary_point(primary: str):
-    props = ["x", "y", "x_flip", "y_flip", "angle", "circumnavigation", "slope"]
+    props = ["x", "y", "x_flip", "y_flip", "angle1", "angle2"]
     if not primary in props:
         raise ValueError(format_unknown_property(primary, props, "primary"))
 

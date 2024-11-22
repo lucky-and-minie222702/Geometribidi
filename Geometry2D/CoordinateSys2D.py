@@ -57,7 +57,7 @@ class CoordinateSys2D:
 
     def set_primary(self, primary: str):
         minn = np.min(self.points, axis=0)
-        if primary == "angle":
+        if primary == "angle2":
             self.set_og(*minn)
         for idx in range(len(self.points)):
             self.points[idx].set_primary(primary)
@@ -68,7 +68,9 @@ class CoordinateSys2D:
                     in_place: bool = True, 
                     og: Tuple[int, int] = (0, 0)):
         
-        if self.primary == "circumnavigation":
+        last = (None, None)
+        if self.primary == "angle1":
+            last = self.og
             self.set_og(*og)
         res = np.sort(self.points, kind = "heapsort")
         if descending:
@@ -77,6 +79,8 @@ class CoordinateSys2D:
             self.__points = res
         else:
             return res
+        if self.primary == "angle1":
+            self.set_og(*last)
     
     def is_points_sorted(self) -> bool:
         return np.all(self.points[:-1] <= self.points[1:])

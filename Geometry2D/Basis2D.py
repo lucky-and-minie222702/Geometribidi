@@ -1,7 +1,5 @@
 import numpy as np
 from functools import total_ordering
-
-from sympy import Line
 import Checker
 from typing import Tuple
 import math
@@ -82,14 +80,15 @@ class Point2D:
             return Point2D(self.x + val, self.y)
     
     def __eq__(self, other) -> bool:
-        if self.primary != "angle" and not self.primary == "slope":
+        if self.primary != "angle1" and not self.primary == "angle2":
             return self.x == other.x and self.y == other.y
-        elif self.primary == "slope":
+        elif self.primary == "angle1":
             line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
             line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
-            m1, _ = line1.to_slope_intercept()
-            m2,_  = line2.to_slope_intercept()
-            return m1 == m2
+            line3: Line2D = Line2D(0, 1, 0)
+            ang1 = line1.angle_with(line3)
+            ang2 = line2.angle_with(line3)
+            return ang1 == ang2
         else:
             return Fundamental2D.direction(Point2D(*self.__og), self, other) == 0
 
@@ -114,13 +113,14 @@ class Point2D:
                 return self.y < other.y
             else:
                 return self.x > other.x
-        elif self.primary == "slope":
+        elif self.primary == "angle1":
             line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
             line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
-            m1, _ = line1.to_slope_intercept()
-            m2,_  = line2.to_slope_intercept()
-            return m1 < m2
-        elif self.primary == "angle":
+            line3: Line2D = Line2D(0, 1, 0)
+            ang1 = line1.angle_with(line3)
+            ang2 = line2.angle_with(line3)
+            return ang1 < ang2
+        elif self.primary == "angle2":
             return Fundamental2D.direction(Point2D(*self.__og), self, other) == -1
 
     def __repr__(self) -> str:
@@ -171,7 +171,7 @@ class Line2D:
                 return 0
             else:
                 # parallel
-                return 1
+                return 0
         
         delta_x = -c1 * b2 + c2 * b1
         delta_y = -a1 * c2 + a2 * c1
@@ -181,7 +181,6 @@ class Line2D:
 
         return x, y
             
-
     def from_slop_intercept(m: int, intercept: int, is_raw: bool = False):
         a = m
         b = -1
@@ -191,7 +190,11 @@ class Line2D:
         else:
             return Line2D(a, b, c)
     
-    def from_fix_points(p1: Point2D, p2: Point2D, is_raw: bool = False):
+    def from_fix_points(p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], is_raw: bool = False):
+        if not isinstance(p1, Point2D):
+            p1 = Point2D(*p1)
+        if not isinstance(p2, Point2D):
+            p2 = Point2D(*p2)
         a =  p2.y - p1.y
         b = p1.x - p2.x
         c = (p2.x * p1.y) - (p1.x * p2.y)
@@ -201,18 +204,41 @@ class Line2D:
             return Line2D(a, b, c)
 
     def to_slope_intercept(self) -> Tuple[int, int]:
-        if self.coef_b != 0:
-            m = -self.coef_a / self.coef_b
-            intercept = -self.coef_c / self.coef_b
+        a, b, c = self.coef_a, self.coef_b, self.coef_c
+        if b != 0:
+            m = -a / b
+            intercept = -c / b
         else: 
             return None, None
         return m, intercept
 
     def distance_to(self, p: Point2D) -> float:
-        top = abs(self.coef_a * p.x + self.coef_b * p.y + self.coef_c) 
-        bot = math.sqrt(self.coef_a**2 + self.coef_b**2)
+        a, b, c = self.coef_a, self.coef_b, self.coef_c
+        top = abs(a * p.x + b * p.y + c) 
+        bot = math.sqrt(a**2 + b**2)
         d = top / bot
         return d
+    
+    def angle_with(self, other, closest: bool = False):
+        a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
+        a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
+
+        dot_product = a1 * a2 + b1 * b2
+        magnitude1 = math.sqrt(a1**2 + b1**2)
+        magnitude2 = math.sqrt(a2**2 + b2**2)
+        
+        if magnitude1 == 0 or magnitude2 == 0:
+            # a == 0
+            return None
+        if closest:
+            dot_product = abs(dot_product)
+        cos_theta = dot_product / (magnitude1 * magnitude2)
+        cos_theta = min(1, max(-1, cos_theta))
+        
+        theta = math.acos(cos_theta)
+        theta_degrees = math.degrees(theta)
+        
+        return theta_degrees
     
     def x_to_y(self, x: int) -> float:
         y = -(self.coef_c + self.coef_a * x) / self.coef_b

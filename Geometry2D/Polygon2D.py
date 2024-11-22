@@ -1,5 +1,4 @@
 import numpy as np
-from sympy import true
 from Geometry2D.Basis2D import *
 from Geometry2D.CoordinateSys2D import *
 import Checker
