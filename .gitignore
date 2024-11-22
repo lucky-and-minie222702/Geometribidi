@@ -5,5 +5,5 @@ note.txt
 main.py
 *.ipynb
 test.txt
-*test
+*test*
 .DS_Store
