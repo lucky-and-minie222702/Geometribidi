@@ -104,7 +104,7 @@ class CoordinateSys2D:
         return graph
 
 
-    def draw_polygon(self, dividing_line: int | Line2D = -1, as_segment: bool = True) -> list[Segment2D] | list[Point2D]:
+    def draw_polygon(self, dividing_line: int = -1, as_segment: bool = True) -> list[Segment2D] | list[Point2D]:
         self.sort_points()
         if dividing_line == -1:
             last_primary = self.__primary
@@ -116,7 +116,7 @@ class CoordinateSys2D:
                 b = 1,
                 c = -points[len(points)//2].y
             )
-        elif isinstance(dividing_line, int):
+        else:
             dividing_line = Line2D(
                 a = 0,
                 b = 1,

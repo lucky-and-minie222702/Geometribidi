@@ -58,13 +58,13 @@ class Point2D:
     def set_og(self, x: float, y: float):
         self.__og = (x, y)
 
-    def distance_to(self, other) -> float:
+    def distance_to(self, other: "Point2D") -> float:
         return math.sqrt(
             (self.x - other.x) ** 2 +
             (self.y - other.y) ** 2
         )
     
-    def raw_coordinate(self):
+    def raw_coordinate(self) -> Tuple[int, int]:
         return self.x, self.y
     
     def shift_x(self, val: int, in_place: bool = True, return_new: bool = False):
@@ -79,20 +79,19 @@ class Point2D:
         if return_new:
             return Point2D(self.x + val, self.y)
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: "Point2D") -> bool:
         if self.primary != "angle1" and not self.primary == "angle2":
-            return self.x == other.x and self.y == other.y
+            return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
         elif self.primary == "angle1":
-            line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
-            line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
+            line1: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), self)
             line3: Line2D = Line2D(0, 1, 0)
             ang1 = line1.angle_with(line3)
             ang2 = line2.angle_with(line3)
-            return ang1 == ang2
+            return math.isclose(ang1, ang2)
         else:
             return Fundamental2D.direction(Point2D(*self.__og), self, other) == 0
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: "Point2D") -> bool:
         if self.primary == "x":
             if self.x != other.x:
                 return self.x < other.x
@@ -114,8 +113,8 @@ class Point2D:
             else:
                 return self.x > other.x
         elif self.primary == "angle1":
-            line1: Line2D = Line2D.from_fix_points(Point2D(*self.__og), self)
-            line2: Line2D = Line2D.from_fix_points(Point2D(*self.__og), other)
+            line1: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), self)
+            line2: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), other)
             line3: Line2D = Line2D(0, 1, 0)
             ang1 = line1.angle_with(line3)
             ang2 = line2.angle_with(line3)
@@ -160,7 +159,7 @@ class Line2D:
     def coefs(self):
         return self.coef_a, self.coef_b, self.coef_c
 
-    def intersect(self, other):
+    def intersect(self, other: "Line2D"):
         a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
         a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
         delta = a1 * b2 - a2 * b1
@@ -180,17 +179,19 @@ class Line2D:
         y = delta_y / delta
 
         return x, y
-            
-    def from_slop_intercept(m: int, intercept: int, is_raw: bool = False):
+    
+    @classmethod
+    def from_slop_intercept(cls, m: int, intercept: int, is_raw: bool = False):
         a = m
         b = -1
         c = -intercept
         if is_raw:
             return a, b, c
         else:
-            return Line2D(a, b, c)
-    
-    def from_fix_points(p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], is_raw: bool = False):
+            return cls(a, b, c)
+
+    @classmethod
+    def from_fixed_points(cls, p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], return_raw: bool = False):
         if not isinstance(p1, Point2D):
             p1 = Point2D(*p1)
         if not isinstance(p2, Point2D):
@@ -198,10 +199,10 @@ class Line2D:
         a =  p2.y - p1.y
         b = p1.x - p2.x
         c = (p2.x * p1.y) - (p1.x * p2.y)
-        if is_raw:
+        if return_raw:
             return a, b, c
         else:
-            return Line2D(a, b, c)
+            return cls(a, b, c)
 
     def to_slope_intercept(self) -> Tuple[int, int]:
         a, b, c = self.coef_a, self.coef_b, self.coef_c
@@ -219,7 +220,7 @@ class Line2D:
         d = top / bot
         return d
     
-    def angle_with(self, other, closest: bool = False):
+    def angle_with(self, other: "Line2D", closest: bool = False) -> float:
         a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
         a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
 
@@ -244,7 +245,7 @@ class Line2D:
         y = -(self.coef_c + self.coef_a * x) / self.coef_b
         return y
     
-    def x_y_range(self, start: int, count: int) -> list:
+    def x_y_range(self, start: int, count: int) -> list[Tuple[int, int]]:
         x = start
         res = []
         while len(res) < count:
@@ -266,7 +267,7 @@ class Segment2D(Line2D):
             p1, p2 = p2, p1
         self.__p1 = p1 # small
         self.__p2 = p2 # large
-        a, b, c = Line2D.from_fix_points(p1, p2, True)
+        a, b, c = Line2D.from_fixed_points(p1, p2, True)
         super().__init__(a, b, c)
 
     @property
@@ -315,3 +316,27 @@ class Segment2D(Line2D):
     
     def __iter__(self):
         return iter([self.p1, self.p2])
+
+class Angle2D:
+    def __init__(self, og: Tuple[int, int] | Point2D, p1: Tuple[int, int] | Point2D, p2: Tuple[int, int] | Point2D):
+        if isinstance(p1, Tuple):
+            p1 = Point2D(*p1)
+        if isinstance(p2, Tuple):
+            p2 = Point2D(*p2)
+        if isinstance(og, Tuple):
+            og = Point2D(*og)
+
+        self.__p1 = p1
+        self.__p2 = p2
+        self.__og = og
+        line1 = Line2D.from_fixed_points(self.__og, self.__p1)
+        line2 = Line2D.from_fixed_points(self.__og, self.__p2)
+        self.__sm_angle = line1.angle_with(line2, True)
+        
+    @property
+    def sm_angle(self) -> float:
+        return self.__sm_angle
+    
+    @property
+    def lg_angle(self) -> float:
+        return 360 - self.__sm_angle
