@@ -2,21 +2,17 @@ from Geometry2D.Basis2D import *
 
 class CoordinateSys2D:
     def __init__(self, 
-                 points: list | list[Point2D] | np.ndarray, 
+                 points: list[Tuple[int, int]] | list[Point2D] | np.ndarray, 
                  primary: str = "x", 
                  angle: int = 0, 
                  og: Tuple[int, int] = (0, 0), 
-                 from_raw_points: bool = True,
                  optimize: bool = True):
 
         Checker.check_primary_point(primary)
-        self.__primary = primary
         Checker.check_angle(angle)
+        self.__primary = primary
         self.__angle = angle
-        if from_raw_points:
-            self.__points = np.array(Point2D.to_points(points, primary, angle,))
-        else:
-            self.__points = points
+        self.__points = np.array(Point2D.to_points(points, primary, angle,))
         self.__og = og
         
         if optimize:
@@ -96,7 +92,10 @@ class CoordinateSys2D:
             return CoordinateSys2D(points)
 
     def draw_graph(self) -> list:
+        last_primary = self.primary
+        self.set_primary("x")
         self.sort_points()
+        self.set_primary(last_primary)
         graph = []
         for idx in range(len(self.points)-1):
             p1, p2 = Point2D(*self.points[idx]), Point2D(*self.points[idx+1])
@@ -107,7 +106,7 @@ class CoordinateSys2D:
     def draw_polygon(self, dividing_line: int = -1, as_segment: bool = True) -> list[Segment2D] | list[Point2D]:
         self.sort_points()
         if dividing_line == -1:
-            last_primary = self.__primary
+            last_primary = self.primary
             self.set_primary("y")
             points = self.sort_points(in_place = False)
             self.set_primary(last_primary)

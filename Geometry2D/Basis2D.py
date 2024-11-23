@@ -1,3 +1,4 @@
+from re import I
 import numpy as np
 from functools import total_ordering
 import Checker
@@ -6,7 +7,7 @@ import math
 
 @total_ordering
 class Point2D:
-    def to_points(points, primary: str = "x", angle: int = 0) -> list:
+    def to_points(points, primary: str = "x", angle: int = 0) -> list["Point2D"]:
         points = [Point2D(*p, primary, angle)for p in points]
         return points
 
@@ -43,7 +44,7 @@ class Point2D:
         Checker.check_primary_point(primary)
         self.__primary = primary
 
-    def rotate(self, angle: int, in_place: bool = True, return_new: bool = False):
+    def rotate(self, angle: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
         Checker.check_angle(angle)
         Checker.check_angle_for_rotate(angle)
         if in_place:
@@ -67,28 +68,35 @@ class Point2D:
     def raw_coordinate(self) -> Tuple[int, int]:
         return self.x, self.y
     
-    def shift_x(self, val: int, in_place: bool = True, return_new: bool = False):
+    def shift_x(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
         if in_place:
             self.__x += val
         if return_new:
             return Point2D(self.x + val, self.y)
     
-    def shift_y(self, val: int, in_place: bool = True, return_new: bool = False):
+    def shift_y(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
         if in_place:
             self.__y += val
         if return_new:
             return Point2D(self.x + val, self.y)
+        
+    def set_xy(self, x: float, y: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
+        if in_place:
+            self.__x, self.__y = x, y
+        if return_new:
+            return Point2D(x, y)
     
     def __eq__(self, other: "Point2D") -> bool:
         if self.primary != "angle1" and not self.primary == "angle2":
             return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
         elif self.primary == "angle1":
             line1: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), self)
+            line2: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), other)
             line3: Line2D = Line2D(0, 1, 0)
             ang1 = line1.angle_with(line3)
             ang2 = line2.angle_with(line3)
             return math.isclose(ang1, ang2)
-        else:
+        else: # angle2
             return Fundamental2D.direction(Point2D(*self.__og), self, other) == 0
 
     def __lt__(self, other: "Point2D") -> bool:
@@ -137,6 +145,11 @@ class Fundamental2D:
             return 1
         else:
             return 0
+        
+    def collinear(points: list[Point2D] | np.ndarray) -> bool:
+        Checker.check_len_collinear_points(points)
+        for idx in range(len(points) - 2):
+            p1, p2, p3, = points[idx:idx+3:]
 
 class Line2D:
     def __init__(self, a: int, b: int, c: int):
@@ -159,15 +172,15 @@ class Line2D:
     def coefs(self):
         return self.coef_a, self.coef_b, self.coef_c
 
-    def intersect(self, other: "Line2D"):
-        a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
-        a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
+    def intersect(self, other: "Line2D") -> Tuple[int, int] | int:
+        a1, b1, c1 = self
+        a2, b2, c2 = other
         delta = a1 * b2 - a2 * b1
 
         if delta == 0:
             if a1 * c2 == a2 * c1 and b1 * c2 == b2 * c1:
                 # coincident
-                return 0
+                return 1
             else:
                 # parallel
                 return 0
@@ -181,7 +194,7 @@ class Line2D:
         return x, y
     
     @classmethod
-    def from_slop_intercept(cls, m: int, intercept: int, is_raw: bool = False):
+    def from_slope_intercept(cls, m: int, intercept: int, is_raw: bool = False) -> "Line2D":
         a = m
         b = -1
         c = -intercept
@@ -191,7 +204,7 @@ class Line2D:
             return cls(a, b, c)
 
     @classmethod
-    def from_fixed_points(cls, p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], return_raw: bool = False):
+    def from_fixed_points(cls, p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], return_raw: bool = False) -> "Line2D":
         if not isinstance(p1, Point2D):
             p1 = Point2D(*p1)
         if not isinstance(p2, Point2D):
@@ -204,8 +217,35 @@ class Line2D:
         else:
             return cls(a, b, c)
 
+    def create_intersecting_line(self, x0: float, y0: float, theta: float, return_raw: bool = False) -> Tuple[int, int, int] | "Line2D":
+        a, b, c = self
+        theta_rad = math.radians(theta)
+        
+        if b == 0:
+            m1 = float('inf')
+        else:
+            m1 = -a / b
+
+        if m1 == float('inf'):
+            m2 = math.tan(theta_rad)
+        else:
+            tan_theta = math.tan(theta_rad)
+            m2 = (m1 + tan_theta) / (1 - m1 * tan_theta)
+        
+        if m2 == float('inf'):
+            A, B, C = 1, 0, -x0
+        else:
+            A = -m2
+            B = 1
+            C = m2 * x0 - y0
+        
+        if return_raw:
+            return A, B, C
+        else:
+            return Line2D(A, B, C)
+
     def to_slope_intercept(self) -> Tuple[int, int]:
-        a, b, c = self.coef_a, self.coef_b, self.coef_c
+        a, b, c = self
         if b != 0:
             m = -a / b
             intercept = -c / b
@@ -214,15 +254,15 @@ class Line2D:
         return m, intercept
 
     def distance_to(self, p: Point2D) -> float:
-        a, b, c = self.coef_a, self.coef_b, self.coef_c
+        a, b, c = self
         top = abs(a * p.x + b * p.y + c) 
         bot = math.sqrt(a**2 + b**2)
         d = top / bot
         return d
     
     def angle_with(self, other: "Line2D", closest: bool = False) -> float:
-        a1, b1, c1 = self.coef_a, self.coef_b, self.coef_c
-        a2, b2, c2 = other.coef_a, other.coef_b, other.coef_c
+        a1, b1, c1 = self
+        a2, b2, c2 = other
 
         dot_product = a1 * a2 + b1 * b2
         magnitude1 = math.sqrt(a1**2 + b1**2)
@@ -253,7 +293,7 @@ class Line2D:
                 res.append([x, self.x_to_y(x)])
             x += 1
         return res
-        
+
     def __repr__(self) -> str:
         return f"{self.coef_a}x + {self.coef_a}y + {self.coef_c} = 0"
 

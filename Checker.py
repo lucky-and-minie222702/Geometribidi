@@ -10,14 +10,6 @@ def check_primary_point(primary: str):
     props = ["x", "y", "x_flip", "y_flip", "angle1", "angle2"]
     if not primary in props:
         raise ValueError(format_unknown_property(primary, props, "primary"))
-
-def check_unknow_type_point(p):
-    if len(p) != 2:
-        raise ValueError("Point is not valid, which isn't a  pair of int32")
-    
-def check_numpy_point(p: np.ndarray):
-    if p.flatten().shape[1] != 2:
-        raise ValueError("Point is not valid, which isn't a  pair of int32")
     
 def check_str_length(s: str, expected_len: int, method: str = "=="):
     props = ["==", "<=", ">="]
@@ -48,6 +40,14 @@ def check_angle(ang: int):
 def check_angle_for_rotate(ang: int):
     if ang % 90 == 0:
         raise ValueError(f"Cannot rotate the coordinate system {ang} degree")
+
+def check_radius(r: int):
+    if r <= 0:
+        raise ValueError("Radius must be >= 0")
+
+def check_len_collinear_points(p):
+    if len(p) < 3:
+        raise ValueError("There must be more than 2 points to check the collinear between them")
 
 def raise_warn(mes: str, current_frame: FrameType):
     current_line = current_frame.f_lineno
