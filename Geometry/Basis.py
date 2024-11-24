@@ -8,12 +8,12 @@ from mpmath import mp
 mp.dps = 100
 
 @total_ordering
-class Point2D:
-    def to_points(points, primary: str = "x", angle: int = 0) -> list["Point2D"]:
-        points = [Point2D(*p, primary, angle)for p in points]
+class Point:
+    def to_points(points, primary: str = "x", angle: float = 0) -> list["Point"]:
+        points = [Point(*p, primary, angle)for p in points]
         return points
 
-    def __init__(self, x: float, y: float, primary: str = "x", angle: int = 0, og: Tuple[int, int] = (0, 0)):
+    def __init__(self, x: float, y: float, primary: str = "x", angle: float = 0, og: Tuple[float, float] = (0, 0)):
         self.__x = x
         self.__y = y
         Checker.check_primary_point(primary)
@@ -58,7 +58,7 @@ class Point2D:
     def rotate_default(self):
         self.__x, self.__y = self.__ogxy
 
-    def rotate(self, angle: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
+    def rotate(self, angle: float, in_place: bool = True, return_new: bool = False) -> "Point":
         Checker.check_angle(angle)
         Checker.check_angle_for_rotate(angle)
         angle += self.angle
@@ -77,52 +77,52 @@ class Point2D:
             y = self.__ogxy[0]*cos(angle) + self.__ogxy[1]*sin(angle)
             x = float(x)
             y = float(y)
-            return Point2D(x, y)
+            return Point(x, y)
 
     def set_og(self, x: float, y: float):
         self.__og = (x, y)
 
-    def distance_to(self, other: "Point2D") -> float:
+    def distance_to(self, other: "Point") -> float:
         return sqrt(
             (self.x - other.x) ** 2 +
             (self.y - other.y) ** 2
         )
     
-    def shift_x(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
+    def shift_x(self, val: float, in_place: bool = True, return_new: bool = False) -> "Point":
         if in_place:
             self.__x += val
             self.__ogxy = (self.__x, self.__y)
         if return_new:
-            return Point2D(self.x + val, self.y)
+            return Point(self.x + val, self.y)
     
-    def shift_y(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
+    def shift_y(self, val: float, in_place: bool = True, return_new: bool = False) -> "Point":
         if in_place:
             self.__y += val
             self.__ogxy = (self.__x, self.__y)
         if return_new:
-            return Point2D(self.x + val, self.y)
+            return Point(self.x + val, self.y)
         
-    def set_xy(self, x: float, y: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
+    def set_xy(self, x: float, y: float, in_place: bool = True, return_new: bool = False) -> "Point":
         if in_place:
             self.__x, self.__y = x, y
             self.__ogxy = (self.__x, self.__y)
         if return_new:
-            return Point2D(x, y)
+            return Point(x, y)
     
-    def __eq__(self, other: "Point2D") -> bool:
+    def __eq__(self, other: "Point") -> bool:
         if self.primary != "angle1" and not self.primary == "angle2":
             return math.isclose(self.x, other.x) and math.isclose(self.y, other.y)
         elif self.primary == "angle1":
-            line1: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), self)
-            line2: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), other)
-            line3: Line2D = Line2D(0, 1, 0)
+            line1: Line = Line.from_fixed_points(Point(*self.__og), self)
+            line2: Line = Line.from_fixed_points(Point(*self.__og), other)
+            line3: Line = Line(0, 1, 0)
             ang1 = line1.angle_with(line3)
             ang2 = line2.angle_with(line3)
             return math.isclose(ang1, ang2)
         else: # angle2
-            return Fundamental2D.direction(Point2D(*self.__og), self, other) == 0
+            return Fundamental.direction(Point(*self.__og), self, other) == 0
 
-    def __lt__(self, other: "Point2D") -> bool:
+    def __lt__(self, other: "Point") -> bool:
         if self.primary == "x":
             if self.x != other.x:
                 return self.x < other.x
@@ -144,14 +144,14 @@ class Point2D:
             else:
                 return self.x > other.x
         elif self.primary == "angle1":
-            line1: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), self)
-            line2: Line2D = Line2D.from_fixed_points(Point2D(*self.__og), other)
-            line3: Line2D = Line2D(0, 1, 0)
+            line1: Line = Line.from_fixed_points(Point(*self.__og), self)
+            line2: Line = Line.from_fixed_points(Point(*self.__og), other)
+            line3: Line = Line(0, 1, 0)
             ang1 = line1.angle_with(line3)
             ang2 = line2.angle_with(line3)
             return ang1 < ang2
         elif self.primary == "angle2":
-            return Fundamental2D.direction(Point2D(*self.__og), self, other) == -1
+            return Fundamental.direction(Point(*self.__og), self, other) == -1
 
     def __repr__(self) -> str:
         return f"({self.x}, {self.y})"
@@ -159,25 +159,30 @@ class Point2D:
     def __iter__(self):
         return iter([self.x, self.y])
 
-class Fundamental2D:
+class Fundamental:
     MAX = 1e9
     MIN = 1e-9
-    def direction(A: Point2D, B: Point2D, C: Point2D) -> int:
-        kq = (B.x - A.x) * (B.y + A.y) + (C.x - B.x) * (C.y + B.y) + (A.x - C.x) * (A.y + C.y)
-        if kq < 0:
+    def direction(A: Point, B: Point, C: Point, return_area: bool = False) -> int:
+        area = (B.x - A.x) * (B.y + A.y) + (C.x - B.x) * (C.y + B.y) + (A.x - C.x) * (A.y + C.y)
+        if return_area:
+            return area
+        if area < 0:
             return -1
-        elif kq > 0:
+        elif area > 0:
             return 1
         else:
             return 0
         
-    def collinear(points: list[Point2D] | np.ndarray) -> bool:
+    def collinear(points: list[Point] | np.ndarray) -> bool:
         Checker.check_len_collinear_points(points)
         for idx in range(len(points) - 2):
             p1, p2, p3, = points[idx:idx+3:]
+            if Fundamental.collinear(p1, p2, p3) != 0:
+                return False
+        return True
 
-class Line2D:
-    def __init__(self, a: int, b: int, c: int):
+class Line:
+    def __init__(self, a: float, b: float, c: float):
         self.__coef_a = a
         self.__coef_b = b
         self.__coef_c = c
@@ -197,7 +202,7 @@ class Line2D:
     def coefs(self):
         return self.coef_a, self.coef_b, self.coef_c
 
-    def intersect(self, other: "Line2D") -> Tuple[int, int] | int:
+    def intersect(self, other: "Line") -> Tuple[float, float] | int:
         a1, b1, c1 = self
         a2, b2, c2 = other
         delta = a1 * b2 - a2 * b1
@@ -219,7 +224,7 @@ class Line2D:
         return x, y
     
     @classmethod
-    def from_slope_intercept(cls, m: int, intercept: int, is_raw: bool = False) -> "Line2D":
+    def from_slope_intercept(cls, m: float, intercept: float, is_raw: bool = False) -> "Line":
         a = m
         b = -1
         c = -intercept
@@ -229,11 +234,11 @@ class Line2D:
             return cls(a, b, c)
 
     @classmethod
-    def from_fixed_points(cls, p1: Point2D | Tuple[int, int], p2: Point2D | Tuple[int, int], return_raw: bool = False) -> "Line2D":
-        if not isinstance(p1, Point2D):
-            p1 = Point2D(*p1)
-        if not isinstance(p2, Point2D):
-            p2 = Point2D(*p2)
+    def from_fixed_points(cls, p1: Point | Tuple[float, float], p2: Point | Tuple[float, float], return_raw: bool = False) -> "Line":
+        if not isinstance(p1, Point):
+            p1 = Point(*p1)
+        if not isinstance(p2, Point):
+            p2 = Point(*p2)
         a =  p2.y - p1.y
         b = p1.x - p2.x
         c = (p2.x * p1.y) - (p1.x * p2.y)
@@ -242,7 +247,7 @@ class Line2D:
         else:
             return cls(a, b, c)
 
-    def create_intersecting_line(self, x0: float, y0: float, theta: float, return_raw: bool = False) -> Tuple[int, int, int] | "Line2D":
+    def create_intersecting_line(self, x0: float, y0: float, theta: float, return_raw: bool = False) -> Tuple[int, int, int] | "Line":
         a, b, c = self
         theta_rad = math.radians(theta)
         
@@ -267,9 +272,9 @@ class Line2D:
         if return_raw:
             return A, B, C
         else:
-            return Line2D(A, B, C)
+            return Line(A, B, C)
 
-    def to_slope_intercept(self) -> Tuple[int, int]:
+    def to_slope_intercept(self) -> Tuple[float, float]:
         a, b, c = self
         if b != 0:
             m = -a / b
@@ -278,14 +283,14 @@ class Line2D:
             return None, None
         return m, intercept
 
-    def distance_to(self, p: Point2D) -> float:
+    def distance_to(self, p: Point) -> float:
         a, b, c = self
         top = abs(a * p.x + b * p.y + c) 
         bot = sqrt(a**2 + b**2)
         d = top / bot
         return d
     
-    def angle_with(self, other: "Line2D", closest: bool = False) -> float:
+    def angle_with(self, other: "Line", closest: bool = False) -> float:
         a1, b1, c1 = self
         a2, b2, c2 = other
 
@@ -306,11 +311,11 @@ class Line2D:
         
         return theta_degrees
     
-    def x_to_y(self, x: int) -> float:
+    def x_to_y(self, x: float) -> float:
         y = -(self.coef_c + self.coef_a * x) / self.coef_b
         return y
     
-    def x_y_range(self, start: int, count: int) -> list[Tuple[int, int]]:
+    def x_y_range(self, start: float, count: float) -> list[Tuple[float, float]]:
         x = start
         res = []
         while len(res) < count:
@@ -325,14 +330,14 @@ class Line2D:
     def __iter__(self):
         return iter([self.coef_a, self.coef_b, self.coef_c])
 
-class Segment2D(Line2D):
-    def __init__(self, p1: Point2D, p2: Point2D, sort: bool = True):
+class Segment(Line):
+    def __init__(self, p1: Point, p2: Point, sort: bool = True):
         Checker.check_overlap_point(p1, p2)
         if p1 > p2 and sort:
             p1, p2 = p2, p1
         self.__p1 = p1 # small
         self.__p2 = p2 # large
-        a, b, c = Line2D.from_fixed_points(p1, p2, True)
+        a, b, c = Line.from_fixed_points(p1, p2, True)
         super().__init__(a, b, c)
 
     @property
@@ -350,31 +355,31 @@ class Segment2D(Line2D):
     def length(self) -> float:
         return self.p1.distance_to(self.p2)
 
-    def connection(self) -> list[Point2D]:
+    def connection(self) -> list[Point]:
         last = (self.p1, self.p2)
         if self.p1 > self.p2:
             self.__p1, self.__p2 = self.p2, self.p1
-        Line2D = []
+        Line = []
         movex = [0, 1]
         movey = [0, 1] if self.p1.y < self.p2.y else [-1, 0]
         p = self.p1
-        Line2D.append(p)
+        Line.append(p)
         while p != self.p2:
-            x, y = Line2D[-1].x, Line2D[-1].y
-            minn1, minn2 = Fundamental2D.MAX, Fundamental2D.MAX
+            x, y = Line[-1].x, Line[-1].y
+            minn1, minn2 = Fundamental.MAX, Fundamental.MAX
             for dx in movex:
                 for dy in movey:
                     if (dx, dy) == (0, 0):
                         continue
-                    dis1 = self.distance_to(Point2D(x+dx, y+dy))
-                    dis2 = self.p2.distance_to(Point2D(x+dx, y+dy))
+                    dis1 = self.distance_to(Point(x+dx, y+dy))
+                    dis2 = self.p2.distance_to(Point(x+dx, y+dy))
                     if (dis1 <= minn1 and dis2 < minn2) or (dis1 < minn1 and dis2 <= minn2):
                         minn1 = dis1
                         minn2 = dis2
-                        p = Point2D(x+dx, y+dy)
-            Line2D.append(p)
+                        p = Point(x+dx, y+dy)
+            Line.append(p)
         self.__p1, self.__p2 = last
-        return Line2D
+        return Line
     
     def __repr__(self) -> str:
         return f"{self.p1} - {self.p2}"
@@ -382,20 +387,20 @@ class Segment2D(Line2D):
     def __iter__(self):
         return iter([self.p1, self.p2])
 
-class Angle2D:
-    def __init__(self, og: Tuple[int, int] | Point2D, p1: Tuple[int, int] | Point2D, p2: Tuple[int, int] | Point2D):
+class Angle:
+    def __init__(self, og: Tuple[float, float] | Point, p1: Tuple[float, float] | Point, p2: Tuple[float, float] | Point):
         if isinstance(p1, Tuple):
-            p1 = Point2D(*p1)
+            p1 = Point(*p1)
         if isinstance(p2, Tuple):
-            p2 = Point2D(*p2)
+            p2 = Point(*p2)
         if isinstance(og, Tuple):
-            og = Point2D(*og)
+            og = Point(*og)
 
         self.__p1 = p1
         self.__p2 = p2
         self.__og = og
-        line1 = Line2D.from_fixed_points(self.__og, self.__p1)
-        line2 = Line2D.from_fixed_points(self.__og, self.__p2)
+        line1 = Line.from_fixed_points(self.__og, self.__p1)
+        line2 = Line.from_fixed_points(self.__og, self.__p2)
         self.__sm_angle = line1.angle_with(line2, True)
         
     @property

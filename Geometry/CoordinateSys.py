@@ -1,18 +1,18 @@
-from Geometry2D.Basis2D import *
+from Geometry.Basis import *
 
-class CoordinateSys2D:
+class CoordinateSys:
     def __init__(self, 
-                 points: list[Tuple[int, int]] | list[Point2D] | np.ndarray, 
+                 points: list[Tuple[float, float]] | list[Point] | np.ndarray, 
                  primary: str = "x", 
-                 angle: int = 0, 
-                 og: Tuple[int, int] = (0, 0), 
+                 angle: float = 0, 
+                 og: Tuple[float, float] = (0, 0), 
                  optimize: bool = True):
 
         Checker.check_primary_point(primary)
         Checker.check_angle(angle)
         self.__primary = primary
         self.__angle = angle
-        self.__points = np.array(Point2D.to_points(points, primary, angle,))
+        self.__points = np.array(Point.to_points(points, primary, angle,))
         self.__og = og
         
         if optimize:
@@ -41,7 +41,7 @@ class CoordinateSys2D:
     def og(self):
         return self.__og
         
-    def rotate(self, angle: int):
+    def rotate(self, angle: float):
         for idx in range(len(self.points)):
             self.points[idx].rotate(angle)
         self.__angle = angle
@@ -62,7 +62,7 @@ class CoordinateSys2D:
     def sort_points(self,
                     descending: bool = False, 
                     in_place: bool = True, 
-                    og: Tuple[int, int] = (0, 0)):
+                    og: Tuple[float, float] = (0, 0)):
         
         last = (None, None)
         if self.primary == "angle1":
@@ -89,7 +89,7 @@ class CoordinateSys2D:
             if return_new:
                 points[idx] = func(points[idx])
         if return_new:
-            return CoordinateSys2D(points)
+            return CoordinateSys(points)
 
     def draw_graph(self) -> list:
         last_primary = self.primary
@@ -98,62 +98,62 @@ class CoordinateSys2D:
         self.set_primary(last_primary)
         graph = []
         for idx in range(len(self.points)-1):
-            p1, p2 = Point2D(*self.points[idx]), Point2D(*self.points[idx+1])
-            graph += Segment2D(p1, p2).connection()[:-1:] 
+            p1, p2 = Point(*self.points[idx]), Point(*self.points[idx+1])
+            graph += Segment(p1, p2).connection()[:-1:] 
         return graph
 
 
-    def draw_polygon(self, dividing_line: int = -1, as_segment: bool = True) -> list[Segment2D] | list[Point2D]:
+    def draw_polygon(self, dividing_line: float = -1, as_segment: bool = True) -> list[Segment] | list[Point]:
         self.sort_points()
         if dividing_line == -1:
             last_primary = self.primary
             self.set_primary("y")
             points = self.sort_points(in_place = False)
             self.set_primary(last_primary)
-            dividing_line = Line2D(
+            dividing_line = Line(
                 a = 0,
                 b = 1,
                 c = -points[len(points)//2].y
             )
         else:
-            dividing_line = Line2D(
+            dividing_line = Line(
                 a = 0,
                 b = 1,
                 c = -dividing_line
             )
         raw_p = dividing_line.x_y_range(0, 2)
-        dp1 = Point2D(*raw_p[0])
-        dp2 = Point2D(*raw_p[1])
+        dp1 = Point(*raw_p[0])
+        dp2 = Point(*raw_p[1])
         
-        border: list[Segment2D]  = []
+        border: list[Segment]  = []
         points = []
         # upper hull
-        points = [p for p in self.points if Fundamental2D.direction(dp1, dp2, p) <= 0]
+        points = [p for p in self.points if Fundamental.direction(dp1, dp2, p) <= 0]
         for idx in range(len(points)):
             points[idx].set_primary("x")
         points = sorted(points)
         for idx in range(len(points)-1):
             p1, p2 = points[idx], points[idx+1]
-            border.append(Segment2D(p1, p2))
+            border.append(Segment(p1, p2))
             
         points= []
         # lower hull
-        points = [p for p in self.points if Fundamental2D.direction(dp1, dp2, p) > 0]
+        points = [p for p in self.points if Fundamental.direction(dp1, dp2, p) > 0]
         for idx in range(len(points)):
             points[idx].set_primary("x_flip")
         points = sorted(points)
         points.reverse()
         
-        border.append(Segment2D(
+        border.append(Segment(
             border[-1].p2,
             points[0]
         ))
         
         for idx in range(len(points)-1):
             p1, p2 = points[idx], points[idx+1]
-            border.append(Segment2D(p1, p2))
+            border.append(Segment(p1, p2))
 
-        border.append(Segment2D(
+        border.append(Segment(
             border[0].p1,
             border[-1].p1
         ))
