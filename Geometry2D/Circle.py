@@ -33,4 +33,11 @@ class Circle():
         self.__radius = new
 
     def draw_circle(self) -> list[Point2D]:
-        pass
+        path = [-1, 0, 1]
+        x, y = self.center
+        y += self.radius
+        cir = []
+        for dx in path:
+            for dy in path:
+                minn = Fundamental2D.MAX
+                p = Point2D(x, y)

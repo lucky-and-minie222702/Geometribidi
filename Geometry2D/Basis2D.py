@@ -1,9 +1,11 @@
-from re import I
 import numpy as np
 from functools import total_ordering
 import Checker
 from typing import Tuple
 import math
+from mpmath import radians, sin, cos, tan, sqrt
+from mpmath import mp
+mp.dps = 100
 
 @total_ordering
 class Point2D:
@@ -19,6 +21,7 @@ class Point2D:
         self.__primary = primary
         self.__angle = angle
         self.__og = og
+        self.__ogxy = (self.__x, self.__y)
         
     @property
     def x(self):
@@ -39,50 +42,70 @@ class Point2D:
     @property 
     def angle(self):
         return self.__angle
+    
+    @property
+    def og(self):
+        return self.__og
+    
+    @property
+    def angle_zero(self):
+        return self.__ogxy
 
     def set_primary(self, primary: str):
         Checker.check_primary_point(primary)
         self.__primary = primary
 
+    def rotate_default(self):
+        self.__x, self.__y = self.__ogxy
+
     def rotate(self, angle: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
         Checker.check_angle(angle)
         Checker.check_angle_for_rotate(angle)
+        angle += self.angle
+        if angle > 360 or math.isclose(angle, 360):
+            angle = angle - 360
         if in_place:
             self.__angle = angle
-            angle = math.radians(angle)
-            self.__x = self.x / math.sin(angle)
-            self.__y = self.y / math.cos(angle)
+            angle = radians(angle)
+            self.__x = self.__ogxy[0]*cos(angle) + self.__ogxy[1]*sin(angle)
+            self.__y = self.__ogxy[0]*sin(angle) + self.__ogxy[1]*cos(angle)
+            self.__x = float(self.__x)
+            self.__y = float(self.__y)
         if return_new:
             angle = math.radians(angle)
-            return Point2D(self.x / math.sin(angle), self.y / math.cos(angle))
+            x = self.__ogxy[0]*cos(angle) + self.__ogxy[1]*sin(angle)
+            y = self.__ogxy[0]*cos(angle) + self.__ogxy[1]*sin(angle)
+            x = float(x)
+            y = float(y)
+            return Point2D(x, y)
 
     def set_og(self, x: float, y: float):
         self.__og = (x, y)
 
     def distance_to(self, other: "Point2D") -> float:
-        return math.sqrt(
+        return sqrt(
             (self.x - other.x) ** 2 +
             (self.y - other.y) ** 2
         )
     
-    def raw_coordinate(self) -> Tuple[int, int]:
-        return self.x, self.y
-    
     def shift_x(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
         if in_place:
             self.__x += val
+            self.__ogxy = (self.__x, self.__y)
         if return_new:
             return Point2D(self.x + val, self.y)
     
     def shift_y(self, val: int, in_place: bool = True, return_new: bool = False) -> "Point2D":
         if in_place:
             self.__y += val
+            self.__ogxy = (self.__x, self.__y)
         if return_new:
             return Point2D(self.x + val, self.y)
         
     def set_xy(self, x: float, y: float, in_place: bool = True, return_new: bool = False) -> "Point2D":
         if in_place:
             self.__x, self.__y = x, y
+            self.__ogxy = (self.__x, self.__y)
         if return_new:
             return Point2D(x, y)
     
@@ -137,6 +160,8 @@ class Point2D:
         return iter([self.x, self.y])
 
 class Fundamental2D:
+    MAX = 1e9
+    MIN = 1e-9
     def direction(A: Point2D, B: Point2D, C: Point2D) -> int:
         kq = (B.x - A.x) * (B.y + A.y) + (C.x - B.x) * (C.y + B.y) + (A.x - C.x) * (A.y + C.y)
         if kq < 0:
@@ -256,7 +281,7 @@ class Line2D:
     def distance_to(self, p: Point2D) -> float:
         a, b, c = self
         top = abs(a * p.x + b * p.y + c) 
-        bot = math.sqrt(a**2 + b**2)
+        bot = sqrt(a**2 + b**2)
         d = top / bot
         return d
     
@@ -265,9 +290,9 @@ class Line2D:
         a2, b2, c2 = other
 
         dot_product = a1 * a2 + b1 * b2
-        magnitude1 = math.sqrt(a1**2 + b1**2)
-        magnitude2 = math.sqrt(a2**2 + b2**2)
-        
+        magnitude1 = sqrt(a1**2 + b1**2)
+        magnitude2 = sqrt(a2**2 + b2**2)
+
         if magnitude1 == 0 or magnitude2 == 0:
             # a == 0
             return None
@@ -336,7 +361,7 @@ class Segment2D(Line2D):
         Line2D.append(p)
         while p != self.p2:
             x, y = Line2D[-1].x, Line2D[-1].y
-            minn1, minn2 = 1e9, 1e9
+            minn1, minn2 = Fundamental2D.MAX, Fundamental2D.MAX
             for dx in movex:
                 for dy in movey:
                     if (dx, dy) == (0, 0):

@@ -38,7 +38,7 @@ def check_angle(ang: int):
         raise ValueError(f"Expect angle between 0 - 360, receive {ang}")
     
 def check_angle_for_rotate(ang: int):
-    if ang % 90 == 0:
+    if ang in [361]:
         raise ValueError(f"Cannot rotate the coordinate system {ang} degree")
 
 def check_radius(r: int):

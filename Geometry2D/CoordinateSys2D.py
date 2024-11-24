@@ -59,7 +59,7 @@ class CoordinateSys2D:
             self.points[idx].set_primary(primary)
         self.__primary = primary
 
-    def sort_points(self, 
+    def sort_points(self,
                     descending: bool = False, 
                     in_place: bool = True, 
                     og: Tuple[int, int] = (0, 0)):
