@@ -2,7 +2,7 @@ import numpy as np
 from Geometry.Basis import *
 from typing import Tuple
 from Geometry.CoordinateSys import *
-from Geometry import Checker
+import Checker
 
 class BasePolygon(CoordinateSys):
     def __init__(self, segments: list[Tuple[Tuple[float, float], Tuple[float, float]]] | list[Segment] | np.ndarray):
