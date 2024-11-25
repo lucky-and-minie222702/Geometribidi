@@ -1,6 +1,6 @@
 from Geometry.Basis import *
 from typing import Tuple
-from .. import Checker
+import Checker
 import numpy as np
 
 class CoordinateSys:

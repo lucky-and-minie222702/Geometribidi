@@ -3,8 +3,6 @@ from Geometry.Basis import *
 from typing import Tuple
 from Geometry.CoordinateSys import *
 from Geometry import Checker
-from Basis.Point import Point
-from Basis.Segment import Segment
 
 class BasePolygon(CoordinateSys):
     def __init__(self, segments: list[Tuple[Tuple[float, float], Tuple[float, float]]] | list[Segment] | np.ndarray):
