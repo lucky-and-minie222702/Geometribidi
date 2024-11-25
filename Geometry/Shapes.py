@@ -24,9 +24,7 @@ class Circle():
         return self.__center
     
     @center.setter
-    def center(self, new: Point | Tuple[float, float]):
-        if not isinstance(new, Point):
-            self.__center = Point(*new)
+    def center(self, new: Point):
         self.__center = new
 
     def draw_circle(self, min_step: float = 1) -> list[Point]:

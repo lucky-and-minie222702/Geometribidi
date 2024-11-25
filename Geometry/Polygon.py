@@ -4,24 +4,6 @@ from typing import Tuple
 from Geometry.CoordinateSys import *
 import Checker
 
-class BasePolygon(CoordinateSys):
-    def __init__(self, segments: list[Tuple[Tuple[float, float], Tuple[float, float]]] | list[Segment] | np.ndarray):
-        points = []
-        self.__segments = []
-        for p1, p2 in segments:
-            points.append(p1)
-            points.append(p2)
-            if isinstance(p1, Point):
-                self.__segments.append(Segment(p1, p2))
-            else:
-                self.segments.append(Segment(Point(*p1), Point(*p2)))
-        super().__init__(points)
-        super().refine()
-        
-    @property
-    def segments(self):
-        return self.__segments
-
 class ConvexHull(CoordinateSys):
     def __init__(self, points: list[Tuple[float, float]] | list[Point] | np.ndarray, primary: str = "x"):
         super().__init__(points, primary)

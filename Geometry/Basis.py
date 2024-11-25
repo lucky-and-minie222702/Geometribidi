@@ -9,17 +9,16 @@ mp.dps = 100
 
 @total_ordering
 class Point:
-    def to_points(points, primary: str = "x", angle: float = 0) -> list["Point"]:
-        points = [Point(*p, primary, angle)for p in points]
+    def to_points(points, primary: str = "x") -> list["Point"]:
+        points = [Point(*p, primary) for p in points]
         return points
 
-    def __init__(self, x: float, y: float, primary: str = "x", angle: float = 0, og: Tuple[float, float] = (0, 0)):
+    def __init__(self, x: float, y: float, primary: str = "x", og: Tuple[float, float] = (0, 0)):
         self.__x = x
         self.__y = y
         Checker.check_primary_point(primary)
-        Checker.check_angle(angle)
         self.__primary = primary
-        self.__angle = angle
+        self.__angle = 0
         self.__og = og
         self.__ogxy = (self.__x, self.__y)
         
@@ -343,7 +342,12 @@ class Line:
 
 @total_ordering
 class Segment(Line):
-    def __init__(self, p1: Point, p2: Point, sort: bool = True):
+    def __init__(self, p1: Point | Tuple[float, float], p2: Point | Tuple[float, float], sort: bool = True):
+        if not isinstance(p1, Point):
+            p1 = Point(*p1)
+        if not isinstance(p2, Point):
+            p2 = Point(*p2)
+
         Checker.check_overlap_point(p1, p2)
         if p1 > p2 and sort:
             p1, p2 = p2, p1
@@ -409,11 +413,11 @@ class Segment(Line):
 @total_ordering
 class Angle:
     def __init__(self, og: Tuple[float, float] | Point, p1: Tuple[float, float] | Point, p2: Tuple[float, float] | Point):
-        if isinstance(p1, Tuple):
+        if not isinstance(p1, Point):
             p1 = Point(*p1)
-        if isinstance(p2, Tuple):
+        if not isinstance(p2, Point):
             p2 = Point(*p2)
-        if isinstance(og, Tuple):
+        if not isinstance(og, Point):
             og = Point(*og)
 
         self.__p1 = p1
@@ -424,11 +428,11 @@ class Angle:
         self.__sm_angle = line1.angle_with(line2, True)
         
     @property
-    def sm_angle(self) -> float:
+    def sm_angle(self):
         return self.__sm_angle
     
     @property
-    def lg_angle(self) -> float:
+    def lg_angle(self):
         return 360 - self.__sm_angle
     
     def __eq__(self, other: "Angle") -> bool:

@@ -4,18 +4,12 @@ import Checker
 import numpy as np
 
 class CoordinateSys:
-    def __init__(self, 
-                 points: list[Tuple[float, float]] | list[Point] | np.ndarray, 
-                 primary: str = "x", 
-                 angle: float = 0, 
-                 og: Tuple[float, float] = (0, 0), 
-                 optimize: bool = True):
+    def __init__(self, points: list[Tuple[float, float]] | list[Point] | np.ndarray, primary: str = "x", og: Tuple[float, float] = (0, 0), optimize: bool = True):
 
         Checker.check_primary_point(primary)
-        Checker.check_angle(angle)
         self.__primary = primary
-        self.__angle = angle
-        self.__points = np.array(Point.to_points(points, primary, angle,))
+        self.__angle = 0
+        self.__points = np.array(Point.to_points(points, primary))
         self.__og = og
         
         if optimize:
@@ -32,6 +26,10 @@ class CoordinateSys:
     def points(self):
         return self.__points
     
+    @points.setter
+    def points(self, new):
+        self.__points = new
+    
     @property
     def primary(self):
         return self.__primary
@@ -43,7 +41,7 @@ class CoordinateSys:
     @property
     def og(self):
         return self.__og
-        
+
     def rotate(self, angle: float):
         for idx in range(len(self.points)):
             self.points[idx].rotate(angle)

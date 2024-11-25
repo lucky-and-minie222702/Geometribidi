@@ -1,6 +1,7 @@
 from types import FrameType
 import numpy as np
 import warnings
+import math
 
 def format_unknown_property(receive, expect, name) -> str:
     return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receive '{receive}'"
@@ -49,12 +50,12 @@ def check_len_collinear_points(p):
         raise ValueError("There must be more than 2 points to check the collinear between them")
 
 def check_step(step):
-    min_allowed = 1e-6
-    warn = 1e-3
-    if step <= min_allowed:
+    min_allowed = 1e-5
+    warn_lim = 1e-3
+    if step < min_allowed:
         raise ValueError(f"Step must be greater than minimum value allowed {min_allowed}, receive {step}")
-    if step < warn:
-        raise_warn(f"Step is relatively small, receive {step}, greater than 1e-3 is recommended")
+    if step < warn_lim or math.isclose(step, warn_lim):
+        raise_warn(f"Step is relatively small, receive {step}, greater than {warn_lim} is recommended")
 
 class SkibidiWarning(UserWarning):
     pass
