@@ -1,7 +1,6 @@
 from types import FrameType
 import numpy as np
-import inspect
-import linecache
+import warnings
 
 def format_unknown_property(receive, expect, name) -> str:
     return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receive '{receive}'"
@@ -49,11 +48,15 @@ def check_len_collinear_points(p):
     if len(p) < 3:
         raise ValueError("There must be more than 2 points to check the collinear between them")
 
-def raise_warn(mes: str, current_frame: FrameType):
-    current_line = current_frame.f_lineno
-    current_file = inspect.getfile(current_frame) 
-    line_content = ""
-    for line_offset in range(-2, 3, 1):
-        line_content += linecache.getline(current_file, current_line + line_offset).strip() + "\n    | "
-    line_content = line_content[:-7:]
-    print(f"Warning: {current_file} - {current_line}: {mes}\n => | {line_content}")
+def check_step(step):
+    min_allowed = 1e-6
+    warn = 1e-3
+    if step <= min_allowed:
+        raise ValueError(f"Step must be greater than minimum value allowed {min_allowed}, receive {step}")
+    if step < warn:
+        raise_warn(f"Step is relatively small, receive {step}, greater than 1e-3 is recommended")
+
+class SkibidiWarning(UserWarning):
+    pass
+def raise_warn(mes: str):
+    Warning(mes, SkibidiWarning())

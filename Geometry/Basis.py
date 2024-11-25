@@ -181,6 +181,7 @@ class Fundamental:
                 return False
         return True
 
+@total_ordering
 class Line:
     def __init__(self, a: float, b: float, c: float):
         self.__coef_a = a
@@ -324,12 +325,23 @@ class Line:
             x += 1
         return res
 
+    def __eq__(self, other: "Line") -> bool:
+        a = math.isclose(self.coef_a, other.coef_a)
+        b = math.isclose(self.coef_b, other.coef_b)
+        c = math.isclose(self.coef_c, other.coef_c)
+        return a and b and c
+    
+    def __lt__(self, other):
+        return NotImplemented
+
     def __repr__(self) -> str:
         return f"{self.coef_a}x + {self.coef_a}y + {self.coef_c} = 0"
 
     def __iter__(self):
         return iter([self.coef_a, self.coef_b, self.coef_c])
 
+
+@total_ordering
 class Segment(Line):
     def __init__(self, p1: Point, p2: Point, sort: bool = True):
         Checker.check_overlap_point(p1, p2)
@@ -355,13 +367,14 @@ class Segment(Line):
     def length(self) -> float:
         return self.p1.distance_to(self.p2)
 
-    def connection(self) -> list[Point]:
+    def connection(self, min_step: float = 1) -> list[Point]:
+        Checker.check_step(min_step)
         last = (self.p1, self.p2)
         if self.p1 > self.p2:
             self.__p1, self.__p2 = self.p2, self.p1
         Line = []
-        movex = [0, 1]
-        movey = [0, 1] if self.p1.y < self.p2.y else [-1, 0]
+        movex = [0, min_step]
+        movey = [0, min_step] if self.p1.y < self.p2.y else [-min_step, 0]
         p = self.p1
         Line.append(p)
         while p != self.p2:
@@ -380,13 +393,20 @@ class Segment(Line):
             Line.append(p)
         self.__p1, self.__p2 = last
         return Line
+
+    def __eq__(self, other: "Segment") -> bool:
+        return self.p1 == other.p1 and self.p2 == other.p2
     
+    def __lt__(self, other):
+        return NotImplemented
+
     def __repr__(self) -> str:
         return f"{self.p1} - {self.p2}"
     
     def __iter__(self):
         return iter([self.p1, self.p2])
 
+@total_ordering
 class Angle:
     def __init__(self, og: Tuple[float, float] | Point, p1: Tuple[float, float] | Point, p2: Tuple[float, float] | Point):
         if isinstance(p1, Tuple):
@@ -410,3 +430,9 @@ class Angle:
     @property
     def lg_angle(self) -> float:
         return 360 - self.__sm_angle
+    
+    def __eq__(self, other: "Angle") -> bool:
+        return math.isclose(self.sm_angle, other.sm_angle)
+    
+    def __lt__(self, other: "Angle") -> bool:
+        return self.sm_angle < other.sm_angle

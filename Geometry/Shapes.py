@@ -1,13 +1,12 @@
 import numpy as np
 from Geometry.Basis import *
 import Checker
+from typing import Tuple
 
 class Circle():
     def __init__(self, center: Point | Tuple[float, float], radius: float):
         if not isinstance(center, Point):
             center = Point(*center)
-        elif not isinstance(center, Tuple):
-            raise ValueError("Point's type must be Tuple[float, float] or Point")
         self.__center = center
         self.__radius = radius
 
@@ -28,11 +27,10 @@ class Circle():
     def center(self, new: Point | Tuple[float, float]):
         if not isinstance(new, Point):
             self.__center = Point(*new)
-        elif not isinstance(new, Tuple):
-            raise ValueError("Point's type must be Tuple[float, float] or Point")
         self.__center = new
 
-    def draw_circle(self) -> list[Point]:
+    def draw_circle(self, min_step: float = 1) -> list[Point]:
+        Checker.check_step(min_step)
         x, y = self.center
         
         max_p = []
@@ -42,15 +40,15 @@ class Circle():
         max_p.append(Point(x - self.radius, y))
 
         path = [
-            [[0, 1], [0, 1]],
-            [[0, -1], [0, -1]],
-            [[0, -1], [0, 1]],
-            [[0, 1], [0, -1]],
+            [[0, min_step], [0, -min_step]],
+            [[0, -min_step], [0, -min_step]],
+            [[0, -min_step], [0, min_step]],
+            [[0, min_step], [0, min_step]],
         ]
         
         cir = []
         res = []
-        
+
         for idx in range(4):
             cir = []
             cir.append(max_p[idx])
@@ -58,6 +56,7 @@ class Circle():
             x, y = cir[0]
             while p != max_p[(idx+1)%4]:
                 minn = Fundamental.MAX
+                x, y= cir[-1]
                 for dx in path[idx][0]:
                     for dy in path[idx][1]:
                         if (dx, dy) == (0, 0):
@@ -67,10 +66,13 @@ class Circle():
                         if dis < minn:
                             minn = dis
                             p = Point(x+dx, y+dy)
-                if len(cir) > 200:
-                    exit()
-                # print(cir[-1])
                 cir.append(p)
             cir.pop()
             res += cir
         return res
+    
+    def is_on_circle(self, p: Point | Tuple[float, float]) -> bool:
+        if not isinstance(p, Point):
+            p = Point(*p)
+        dis = self.center.distance_to(p)
+        return math.isclose(dis, self.radius)

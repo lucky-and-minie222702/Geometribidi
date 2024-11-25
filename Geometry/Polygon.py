@@ -1,11 +1,13 @@
 import numpy as np
 from Geometry.Basis import *
-from Geometry.Basis import Tuple
+from typing import Tuple
 from Geometry.CoordinateSys import *
-import Checker
+from Geometry import Checker
+from Basis.Point import Point
+from Basis.Segment import Segment
 
-class Polygon(CoordinateSys):
-    def __init__(self, segments: list | list[Segment] | np.ndarray):
+class BasePolygon(CoordinateSys):
+    def __init__(self, segments: list[Tuple[Tuple[float, float], Tuple[float, float]]] | list[Segment] | np.ndarray):
         points = []
         self.__segments = []
         for p1, p2 in segments:
