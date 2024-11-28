@@ -4,10 +4,9 @@ from typing import Tuple, List
 from Geometry.CoordinateSys import *
 import Checker
 
-class ConvexHull(CoordinateSys):
+class ConvexHull():
     def __init__(self, points: List[Tuple[float, float]] | List[Point] | np.ndarray, primary: str = "x"):
-        super().__init__(points, primary)
-        super().sort_points()
+
         self.__points = self.__convert()
         self.__all_points = points
 

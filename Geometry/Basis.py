@@ -422,7 +422,7 @@ class Segment(Line):
                         p_tmp = Point(x+dx, y+dy)
                         dis1 = self.distance_to(p_tmp)
                         dis2 = self.p2.distance_to(p_tmp)
-                        if (dis1 <= minn1 and dis2 <= minn2) or (dis1 < minn1 and dis2 <= minn2):
+                        if ((dis1 < minn1 or math.isclose(dis1, minn1)) and dis2 < minn2) or (dis1 < minn1 and (dis2 < minn2 or math.isclose(dis2, minn2))):
                             minn1 = dis1
                             minn2 = dis2
                             p = p_tmp

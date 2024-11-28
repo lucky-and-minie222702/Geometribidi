@@ -4,7 +4,7 @@ import Checker
 import numpy as np
 
 class CoordinateSys:
-    def __init__(self, points: list[Tuple[float, float]] | list[Point] | np.ndarray, primary: str = "x", og: Tuple[float, float] = (0, 0), optimize: bool = True):
+    def __init__(self, points: List[Tuple[float, float]] | List[Point] | np.ndarray, primary: str = "x", og: Tuple[float, float] = (0, 0), optimize: bool = True):
 
         Checker.check_primary_point(primary)
         self.__primary = primary
@@ -93,7 +93,7 @@ class CoordinateSys:
         if return_new:
             return CoordinateSys(points)
 
-    def draw_graph(self) -> list:
+    def draw_graph(self) -> List:
         last_primary = self.primary
         self.set_primary("x")
         self.sort_points()
@@ -105,7 +105,7 @@ class CoordinateSys:
         return graph
 
 
-    def draw_polygon(self, dividing_line: float = -1, as_segment: bool = True) -> list[Segment] | list[Point]:
+    def draw_polygon(self, dividing_line: float = -1, as_segment: bool = True) -> List[Segment] | List[Point]:
         self.sort_points()
         if dividing_line == -1:
             last_primary = self.primary
@@ -127,7 +127,7 @@ class CoordinateSys:
         dp1 = Point(*raw_p[0])
         dp2 = Point(*raw_p[1])
         
-        border: list[Segment]  = []
+        border: List[Segment]  = []
         points = []
         # upper hull
         points = [p for p in self.points if Fundamental.direction(dp1, dp2, p) <= 0]
