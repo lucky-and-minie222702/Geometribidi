@@ -1,10 +1,13 @@
+from logging import warn
 from types import FrameType
 import numpy as np
 import warnings
 import math
 
+from torch import Value
+
 def format_unknown_property(receive, expect, name) -> str:
-    return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receive '{receive}'"
+    return f"Uknown {name}, expect |{", ".join(map(lambda x: f"'{x}'", map(str, expect)))}|, receiving '{receive}'"
 
 def check_primary_point(primary: str):
     props = ["x", "y", "x_flip", "y_flip", "angle1", "angle2"]
@@ -35,7 +38,7 @@ def check_coefficients_standard(a: int, b: int, c: int):
     
 def check_angle(ang: int):
     if ang < 0 or ang > 360:
-        raise ValueError(f"Expect angle between 0 - 360, receive {ang}")
+        raise ValueError(f"Expect angle between 0 - 360, receiving {ang}")
     
 def check_angle_for_rotate(ang: int):
     if ang in [361]:
@@ -53,9 +56,22 @@ def check_step(step):
     min_allowed = 1e-5
     warn_lim = 1e-3
     if step < min_allowed:
-        raise ValueError(f"Step must be greater than minimum value allowed {min_allowed}, receive {step}")
+        raise ValueError(f"Step must be greater than minimum value allowed {min_allowed}, receiving {step}")
     if step < warn_lim or math.isclose(step, warn_lim):
-        raise_warn(f"Step is relatively small, receive {step}, greater than {warn_lim} is recommended")
+        raise_warn(f"Step is relatively small, receiving {step}, greater than {warn_lim} is recommended")
+
+def check_segment_connection_mode(mode: str):
+    props = ["closest", "smoothest"]
+    if not mode in props:
+        raise ValueError(format_unknown_property(mode, props, "segment connection mode"))
+
+def check_sparsity(d: float):
+    warn_lim = 1e-6
+    if d < 0 or math.isclose(d, 0) or d > 1 or math.isclose(d, 1):
+        raise ValueError(f"sparsity must be greater than 0 and less than 1, receiving {d}")
+    if d < warn_lim or math.isclose(d, warn_lim):
+        raise_warn("Sparsity is too low, may consumes more resources")
+        
 
 class SkibidiWarning(UserWarning):
     pass

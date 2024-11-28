@@ -123,22 +123,22 @@ class Point:
 
     def __lt__(self, other: "Point") -> bool:
         if self.primary == "x":
-            if self.x != other.x:
+            if not math.isclose(self.x, other.x):
                 return self.x < other.x
             else:
                 return self.y < other.y
         elif self.primary == "y":
-            if self.y != other.y:
+            if not math.isclose(self.y, other.y):
                 return self.y < other.y
             else:
                 return self.x < other.x
         elif self.primary == "x_flip":
-            if self.x != other.x:
+            if not math.isclose(self.x, other.x):
                 return self.x < other.x
             else:
                 return self.y > other.y
         elif self.primary == "y_flip":
-            if self.y != other.y:
+            if not math.isclose(self.y, other.y):
                 return self.y < other.y
             else:
                 return self.x > other.x
@@ -162,7 +162,7 @@ class Fundamental:
     MAX = 1e9
     MIN = 1e-9
     Pi = math.pi
-    def direction(A: Point | Tuple[float, float], B: Point | Tuple[float, float], C: Point | Tuple[float, float], return_area: bool = False) -> int:
+    def direction(A: Point | Tuple[float, float], B: Point | Tuple[float, float], C: Point | Tuple[float, float], return_area: bool = False) -> int | float:
         Ax, Ay = A
         Bx, By = B
         Cx, Cy = C
@@ -180,7 +180,7 @@ class Fundamental:
         Checker.check_len_collinear_points(points)
         for idx in range(len(points) - 2):
             p1, p2, p3, = points[idx:idx+3:]
-            if Fundamental.collinear(p1, p2, p3) != 0:
+            if Fundamental.direction(p1, p2, p3) != 0:
                 return False
         return True
 
@@ -280,7 +280,7 @@ class Line:
 
     def to_slope_intercept(self) -> Tuple[float, float]:
         a, b, c = self.coefs
-        if b != 0:
+        if not math.isclose(b, 0):
             m = -a / b
             intercept = -c / b
         else: 
@@ -316,16 +316,25 @@ class Line:
         return theta_degrees
     
     def x_to_y(self, x: float) -> float:
-        y = -(self.coef_c + self.coef_a * x) / self.coef_b
+        a, b, c = self.coefs
+        if not math.isclose(b, 0):
+            y = -(c + a * x) / b
+        else:
+            y = -c / a
         return y
     
-    def x_y_range(self, start: float, count: float) -> List[Tuple[float, float]]:
+    def x_y_range(self, start: float, count: float, step: float = 1) -> List[Tuple[float, float]]:
         x = start
         res = []
         while len(res) < count:
-            if -(self.coef_c + self.coef_a * x) % self.coef_b == 0:
-                res.append([x, self.x_to_y(x)])
-            x += 1
+            res.append([x, self.x_to_y(x)])
+            x += step
+        return res
+
+    def x_y_dense(self, start: float, end: float, sparsity: float) -> List[Tuple[float, float]]:
+        Checker.check_sparsity(sparsity)
+        step = (end - start) * sparsity
+        res = self.x_y_range(start, int(1 / sparsity), step)
         return res
 
     def __eq__(self, other: "Line") -> bool:
@@ -375,33 +384,40 @@ class Segment(Line):
     def length(self) -> float:
         return self.p1.distance_to(self.p2)
 
-    def connection(self, min_step: float = 1) -> List[Point]:
-        Checker.check_step(min_step)
+    def connection(self, mode: str = "closest", step: float = 1, sparsity: float = 0.25) -> List[Point]:
+        Checker.check_step(step)
+        Checker.check_segment_connection_mode(mode)
         last = (self.p1, self.p2)
         if self.p1 > self.p2:
             self.__p1, self.__p2 = self.p2, self.p1
-        Line = []
-        movex = [0, min_step]
-        movey = [0, min_step] if self.p1.y < self.p2.y else [0, -min_step]
-        p = self.p1
-        Line.append(p)
-        while p != self.p2:
-            x, y = Line[-1].x, Line[-1].y
-            minn1, minn2 = Fundamental.MAX, Fundamental.MAX
-            for dx in movex:
-                for dy in movey:
-                    if (dx, dy) == (0, 0):
-                        continue
-                    p_tmp = Point(x+dx, y+dy)
-                    dis1 = self.distance_to(p_tmp)
-                    dis2 = self.p2.distance_to(p_tmp)
-                    if (dis1 <= minn1 and dis2 <= minn2) or (dis1 < minn1 and dis2 <= minn2):
-                        minn1 = dis1
-                        minn2 = dis2
-                        p = p_tmp
-            Line.append(p)
+
+        if mode == "closest":
+            line = []
+            movex = [0, step]
+            movey = [0, step] if self.p1.y < self.p2.y else [0, -step]
+            p = self.p1
+            line.append(p)
+            while p != self.p2:
+                x, y = line[-1].x, line[-1].y
+                minn1, minn2 = Fundamental.MAX, Fundamental.MAX
+                for dx in movex:
+                    for dy in movey:
+                        if (dx, dy) == (0, 0):
+                            continue
+                        p_tmp = Point(x+dx, y+dy)
+                        dis1 = self.distance_to(p_tmp)
+                        dis2 = self.p2.distance_to(p_tmp)
+                        if (dis1 <= minn1 and dis2 <= minn2) or (dis1 < minn1 and dis2 <= minn2):
+                            minn1 = dis1
+                            minn2 = dis2
+                            p = p_tmp
+                line.append(p)
+        elif mode == "smoothest":
+            points = self.x_y_dense(self.p1.x, self.p2.x, sparsity)
+            line = Point.to_points(points)
+
         self.__p1, self.__p2 = last
-        return Line
+        return line
 
     def __eq__(self, other: "Segment") -> bool:
         return self.p1 == other.p1 and self.p2 == other.p2

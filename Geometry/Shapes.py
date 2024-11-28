@@ -9,7 +9,7 @@ class BaseShape:
     def __init__():
         pass
     
-    def draw(self, min_step: float = 1) -> List[Point]:
+    def draw(self, step: float = 1) -> List[Point]:
         pass
     
     def is_on_edge(self, p: Point | Tuple[float, float]) -> bool:
@@ -49,8 +49,8 @@ class Circle(BaseShape):
     def center(self, new: Point):
         self.__center = new
 
-    def draw(self, min_step: float = 1) -> List[Point]:
-        Checker.check_step(min_step)
+    def draw(self, step: float = 1) -> List[Point]:
+        Checker.check_step(step)
         x, y = self.center
         
         max_p = []
@@ -60,10 +60,10 @@ class Circle(BaseShape):
         max_p.append(Point(x - self.radius, y))
 
         path = [
-            [[0, min_step], [0, -min_step]],
-            [[0, -min_step], [0, -min_step]],
-            [[0, -min_step], [0, min_step]],
-            [[0, min_step], [0, min_step]],
+            [[0, step], [0, -step]],
+            [[0, -step], [0, -step]],
+            [[0, -step], [0, step]],
+            [[0, step], [0, step]],
         ]
         
         cir = []
@@ -177,10 +177,10 @@ class Triangle(BaseShape):
     def points(self) -> List[Point]:
         return [self.p1, self.p2, self.p3]
 
-    def draw(self, min_step: float = 1) -> List[Point]:
-        segment12 = self.__edge12.connection(min_step)
-        segment23 = self.__edge23.connection(min_step)
-        segment13 = self.__edge13.connection(min_step)
+    def draw(self, step: float = 1) -> List[Point]:
+        segment12 = self.__edge12.connection(step)
+        segment23 = self.__edge23.connection(step)
+        segment13 = self.__edge13.connection(step)
         
         return segment23
 
