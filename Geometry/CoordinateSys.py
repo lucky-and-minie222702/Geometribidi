@@ -1,5 +1,5 @@
 from Geometry.Basis import *
-from typing import Tuple
+from typing import Tuple, List
 import Checker
 import numpy as np
 
@@ -28,6 +28,7 @@ class CoordinateSys:
     
     @points.setter
     def points(self, new):
+        Checker.raise_warn("It is not recomended to directly modify points in a coordinate system")
         self.__points = new
     
     @property

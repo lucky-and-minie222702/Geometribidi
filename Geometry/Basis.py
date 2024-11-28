@@ -1,7 +1,7 @@
 import numpy as np
 from functools import total_ordering
 import Checker
-from typing import Tuple
+from typing import Tuple, List
 import math
 from mpmath import radians, sin, cos, tan, sqrt
 from mpmath import mp
@@ -9,7 +9,7 @@ mp.dps = 100
 
 @total_ordering
 class Point:
-    def to_points(points, primary: str = "x") -> list["Point"]:
+    def to_points(points, primary: str = "x") -> List["Point"]:
         points = [Point(*p, primary) for p in points]
         return points
 
@@ -23,31 +23,31 @@ class Point:
         self.__ogxy = (self.__x, self.__y)
         
     @property
-    def x(self):
+    def x(self) -> float:
         return self.__x
 
     @property
-    def y(self):
+    def y(self) -> float:
         return self.__y
-    
+
     @property
-    def xy(self):
-        return self.__x, self.__y
-    
+    def xy(self) -> Tuple[float, float]:
+        return (self.x, self.y)
+
     @property 
-    def primary(self):
+    def primary(self) -> str:
         return self.__primary
     
     @property 
-    def angle(self):
+    def angle(self) -> float:
         return self.__angle
     
     @property
-    def og(self):
+    def og(self) -> Tuple[float, float]:
         return self.__og
     
     @property
-    def angle_zero(self):
+    def angle_zero(self) -> Tuple[float, float]:
         return self.__ogxy
 
     def set_primary(self, primary: str):
@@ -161,8 +161,12 @@ class Point:
 class Fundamental:
     MAX = 1e9
     MIN = 1e-9
-    def direction(A: Point, B: Point, C: Point, return_area: bool = False) -> int:
-        area = (B.x - A.x) * (B.y + A.y) + (C.x - B.x) * (C.y + B.y) + (A.x - C.x) * (A.y + C.y)
+    Pi = math.pi
+    def direction(A: Point | Tuple[float, float], B: Point | Tuple[float, float], C: Point | Tuple[float, float], return_area: bool = False) -> int:
+        Ax, Ay = A
+        Bx, By = B
+        Cx, Cy = C
+        area = (Bx - Ax) * (By + Ay) + (Cx - Bx) * (Cy + By) + (Ax - Cx) * (Ay + Cy)
         if return_area:
             return area
         if area < 0:
@@ -172,7 +176,7 @@ class Fundamental:
         else:
             return 0
         
-    def collinear(points: list[Point] | np.ndarray) -> bool:
+    def collinear(points: List[Point] | np.ndarray) -> bool:
         Checker.check_len_collinear_points(points)
         for idx in range(len(points) - 2):
             p1, p2, p3, = points[idx:idx+3:]
@@ -187,24 +191,24 @@ class Line:
         self.__coef_b = b
         self.__coef_c = c
     @property
-    def coef_a(self):
+    def coef_a(self) -> float:
         return self.__coef_a
 
     @property
-    def coef_b(self):
+    def coef_b(self) -> float:
         return self.__coef_b
     
     @property
-    def coef_c(self):
+    def coef_c(self) -> float:
         return self.__coef_c
     
     @property
-    def coefs(self):
-        return self.coef_a, self.coef_b, self.coef_c
+    def coefs(self) -> Tuple[float, float, float]:
+        return (self.coef_a, self.coef_b, self.coef_c)
 
     def intersect(self, other: "Line") -> Tuple[float, float] | int:
-        a1, b1, c1 = self
-        a2, b2, c2 = other
+        a1, b1, c1 = self.coefs
+        a2, b2, c2 = other.coefs
         delta = a1 * b2 - a2 * b1
 
         if delta == 0:
@@ -247,9 +251,9 @@ class Line:
         else:
             return cls(a, b, c)
 
-    def create_intersecting_line(self, x0: float, y0: float, theta: float, return_raw: bool = False) -> Tuple[int, int, int] | "Line":
-        a, b, c = self
-        theta_rad = math.radians(theta)
+    def create_intersecting_line(self, x0: float, y0: float, angle: float, return_raw: bool = False) -> Tuple[int, int, int] | "Line":
+        a, b, c = self.coefs
+        theta_rad = math.radians(angle)
         
         if b == 0:
             m1 = float('inf')
@@ -275,7 +279,7 @@ class Line:
             return Line(A, B, C)
 
     def to_slope_intercept(self) -> Tuple[float, float]:
-        a, b, c = self
+        a, b, c = self.coefs
         if b != 0:
             m = -a / b
             intercept = -c / b
@@ -284,15 +288,15 @@ class Line:
         return m, intercept
 
     def distance_to(self, p: Point) -> float:
-        a, b, c = self
+        a, b, c = self.coefs
         top = abs(a * p.x + b * p.y + c) 
         bot = sqrt(a**2 + b**2)
         d = top / bot
         return d
     
     def angle_with(self, other: "Line", closest: bool = False) -> float:
-        a1, b1, c1 = self
-        a2, b2, c2 = other
+        a1, b1, c1 = self.coefs
+        a2, b2, c2 = other.coefs
 
         dot_product = a1 * a2 + b1 * b2
         magnitude1 = sqrt(a1**2 + b1**2)
@@ -315,7 +319,7 @@ class Line:
         y = -(self.coef_c + self.coef_a * x) / self.coef_b
         return y
     
-    def x_y_range(self, start: float, count: float) -> list[Tuple[float, float]]:
+    def x_y_range(self, start: float, count: float) -> List[Tuple[float, float]]:
         x = start
         res = []
         while len(res) < count:
@@ -348,7 +352,7 @@ class Segment(Line):
         if not isinstance(p2, Point):
             p2 = Point(*p2)
 
-        Checker.check_overlap_point(p1, p2)
+        Checker.check_coincided_point(p1, p2)
         if p1 > p2 and sort:
             p1, p2 = p2, p1
         self.__p1 = p1 # small
@@ -357,28 +361,28 @@ class Segment(Line):
         super().__init__(a, b, c)
 
     @property
-    def p1(self):
+    def p1(self) -> Point:
         return self.__p1
 
     @property
-    def p2(self):
+    def p2(self) -> Point:
         return self.__p2
     
     @property
-    def xy(self):
-        return self.p1.xy, self.p2.xy
+    def xy(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
+        return (self.p1.xy, self.p2.xy)
     
     def length(self) -> float:
         return self.p1.distance_to(self.p2)
 
-    def connection(self, min_step: float = 1) -> list[Point]:
+    def connection(self, min_step: float = 1) -> List[Point]:
         Checker.check_step(min_step)
         last = (self.p1, self.p2)
         if self.p1 > self.p2:
             self.__p1, self.__p2 = self.p2, self.p1
         Line = []
         movex = [0, min_step]
-        movey = [0, min_step] if self.p1.y < self.p2.y else [-min_step, 0]
+        movey = [0, min_step] if self.p1.y < self.p2.y else [0, -min_step]
         p = self.p1
         Line.append(p)
         while p != self.p2:
@@ -388,12 +392,13 @@ class Segment(Line):
                 for dy in movey:
                     if (dx, dy) == (0, 0):
                         continue
-                    dis1 = self.distance_to(Point(x+dx, y+dy))
-                    dis2 = self.p2.distance_to(Point(x+dx, y+dy))
-                    if (dis1 <= minn1 and dis2 < minn2) or (dis1 < minn1 and dis2 <= minn2):
+                    p_tmp = Point(x+dx, y+dy)
+                    dis1 = self.distance_to(p_tmp)
+                    dis2 = self.p2.distance_to(p_tmp)
+                    if (dis1 <= minn1 and dis2 <= minn2) or (dis1 < minn1 and dis2 <= minn2):
                         minn1 = dis1
                         minn2 = dis2
-                        p = Point(x+dx, y+dy)
+                        p = p_tmp
             Line.append(p)
         self.__p1, self.__p2 = last
         return Line
@@ -428,11 +433,11 @@ class Angle:
         self.__sm_angle = line1.angle_with(line2, True)
         
     @property
-    def sm_angle(self):
+    def sm_angle(self) -> float:
         return self.__sm_angle
     
     @property
-    def lg_angle(self):
+    def lg_angle(self) -> float:
         return 360 - self.__sm_angle
     
     def __eq__(self, other: "Angle") -> bool:

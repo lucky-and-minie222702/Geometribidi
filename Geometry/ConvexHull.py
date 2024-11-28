@@ -1,11 +1,11 @@
 import numpy as np
 from Geometry.Basis import *
-from typing import Tuple
+from typing import Tuple, List
 from Geometry.CoordinateSys import *
 import Checker
 
 class ConvexHull(CoordinateSys):
-    def __init__(self, points: list[Tuple[float, float]] | list[Point] | np.ndarray, primary: str = "x"):
+    def __init__(self, points: List[Tuple[float, float]] | List[Point] | np.ndarray, primary: str = "x"):
         super().__init__(points, primary)
         super().sort_points()
         self.__points = self.__convert()
@@ -25,7 +25,7 @@ class ConvexHull(CoordinateSys):
     def is_points_sorted(self) -> bool:
         return True
 
-    def __convert(self) -> list:
+    def __convert(self) -> List:
         # Monotone chain algorithm
         st = [self.points[0], self.points[1]]
         
@@ -52,5 +52,5 @@ class ConvexHull(CoordinateSys):
         
         return outer_points
     
-    def draw_border(self, **kwargs) -> list[Point] | list[Segment]:
+    def draw_border(self, **kwargs) -> List[Point] | List[Segment]:
         return super().draw_polygon(dividing_line=-1, **kwargs)

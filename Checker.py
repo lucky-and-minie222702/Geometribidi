@@ -25,9 +25,9 @@ def check_str_length(s: str, expected_len: int, method: str = "=="):
         if not len(s) >= expected_len:
             raise ValueError(f"String length is not valid, expect {method} {expected_len}")
         
-def check_overlap_point(a, b):
+def check_coincided_point(a, b, additional_mes: str = ""):
     if a == b:
-        raise ValueError(f"Point {a} and {b} overlap")
+        raise ValueError(f"Point {a} coincides point {b}, which is not valid{" because " + additional_mes if not additional_mes else ""}")
     
 def check_coefficients_standard(a: int, b: int, c: int):
     if b == 0:
