@@ -8,20 +8,15 @@ from typing import Tuple, List
 class BaseShape:
     def __init__():
         pass
-    
     def draw(self, step: float = 1) -> List[Point]:
         pass
-    
-    def is_on_edge(self, p: Point | Tuple[float, float]) -> bool:
+    def is_on_edge(self, p: Point | Tuple[float, float], tol: float = 1e-6) -> bool:
         pass
-    
     @property
     def area(self) -> float:
         return None
-
     def __eq__(self, other) -> float:
         return False
-
     def __lt__(self, other):
         return NotImplemented
 
@@ -92,11 +87,9 @@ class Circle(BaseShape):
             res += cir
         return res
     
-    def is_on_edge(self, p: Point | Tuple[float, float]) -> bool:
-        if not isinstance(p, Point):
-            p = Point(*p)
+    def is_on_edge(self, p: Point, tol: float = 1e-6) -> bool:
         dis = self.center.distance_to(p)
-        return math.isclose(dis, self.radius)
+        return abs(self.radius - dis) < tol
 
     @property
     def area(self) -> float:
@@ -177,12 +170,12 @@ class Triangle(BaseShape):
     def points(self) -> List[Point]:
         return [self.p1, self.p2, self.p3]
 
-    def draw(self, step: float = 1) -> List[Point]:
-        segment12 = self.__edge12.connection(step)
-        segment23 = self.__edge23.connection(step)
-        segment13 = self.__edge13.connection(step)
+    def draw(self, **kwargs) -> List[Point]:
+        segment12 = self.__edge12.connection(**kwargs)
+        segment23 = self.__edge23.connection(**kwargs)
+        segment13 = self.__edge13.connection(**kwargs)
         
-        return segment23
+        return segment12 + segment23 + segment13
 
     def __iter__(self):
         return iter([self.p1, self.p2, self.p3])

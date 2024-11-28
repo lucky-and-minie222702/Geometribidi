@@ -7,6 +7,12 @@ from mpmath import radians, sin, cos, tan, sqrt
 from mpmath import mp
 mp.dps = 100
 
+def in_range(x: float, start: float, end: float, only_inside: bool = False) -> bool:
+    if only_inside:
+        return x > start and x < end
+    else:
+        return (x > start or math.isclose(x, start)) and (x < end or math.isclose(x, end))
+
 @total_ordering
 class Point:
     def to_points(points, primary: str = "x") -> List["Point"]:
@@ -381,10 +387,19 @@ class Segment(Line):
     def xy(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         return (self.p1.xy, self.p2.xy)
     
+    @property
     def length(self) -> float:
         return self.p1.distance_to(self.p2)
 
-    def connection(self, mode: str = "closest", step: float = 1, sparsity: float = 0.25) -> List[Point]:
+    def is_on(self, p: Point) -> bool:
+        x, y = p.xy
+        if not math.isclose(self.x_to_y(x), y):
+            return False
+        if in_range(x, self.p1.x, self.p2.x) and in_range(y, self.p1.y, self.p2.y):
+            return True
+        return False
+
+    def connection(self, mode: str = "closest", step: float = 1, sparsity: float = 0.1) -> List[Point]:
         Checker.check_step(step)
         Checker.check_segment_connection_mode(mode)
         last = (self.p1, self.p2)
